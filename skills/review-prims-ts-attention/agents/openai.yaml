@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prims-TS Attention Review"
+  short_description: "Review FlashInfer attention code, tests and support limits"
+  default_prompt: "Use $review-prims-ts-attention to review this FlashInfer attention change and report concrete findings with source evidence."
