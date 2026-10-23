@@ -96,6 +96,23 @@ Distinguish static model/device facts, generated-kernel identity, workspace capa
 
 Check that `plan()` / `run()` ownership and workspace sizing remain coherent across context, decode and MLA. Prefer reuse of caller-owned buffers and original cache strides over repeated allocation, fill/copy, transposition or host readback. Exact static contracts and runtime bounds must still follow the current API; do not mechanically impose one historical PR's plan signature on every path.
 
+### Audit new static parameters for real-inference JIT cost
+
+Treat each new compile-time parameter as a review decision. A static Python argument, `Constexpr`, captured plan field, concrete tensor shape/stride, generated-code option or compile-cache-key component can create another specialization. Trace where it becomes static rather than relying on its name. Pay particular attention to batch size, total query tokens, per-request query/KV lengths, maximum-length bounds and derived shape tuples, which can vary frequently during real inference.
+
+Prefer runtime arguments or symbolic extents when the generated kernel can handle those values without recompilation. Being known at `plan()` time, convenient for the wrapper, or fixed in a benchmark is not sufficient justification for specializing it. A shape-dependent CPU policy lookup is not automatically a distinct compiled kernel; inspect actual generated signatures/artifacts and reuse across equivalent configurations.
+
+For each added or newly static parameter, record:
+
+- **Necessity:** the layout, resource topology, instruction/code-generation constraint or measured optimization that requires specialization; explain why a runtime value cannot meet the same need.
+- **Inference variability:** the expected values and how often they change across requests, decode steps, batching policies, layers and graph buckets. Check whether the new parameter multiplies variants already created by dtypes, head geometry and other static choices.
+- **Compilation cost:** the expected unique kernel count, cold JIT time, startup/warmup or first-use latency, and whether realistic workload changes trigger more compilation after warmup. Report estimates as estimates when measurements are unavailable; a warm disk cache alone does not establish acceptable cold-start behavior.
+- **Benefit and alternative:** compare any warmed execution gain against compilation and cache growth. Prefer runtime handling or a small justified set of reusable profiles/buckets over an exact-size specialization for every observed batch or sequence length. Preserve necessary capacity checks and every cache field that actually changes generated behavior.
+
+Present this specialization inventory to the user and explicitly ask them to check whether the newly added compilation parameters, especially batch size and sequence length, are reasonable for their deployment. First use workload/configuration evidence already available. If ranges or shape churn are unknown, ask a focused question such as: “What batch-size and Q/KV-length ranges change during serving, and can these proposed static parameters reuse a bounded set of kernels?” Continue independent review work while that information is pending; do not invent a narrow workload or require repetitive approval for facts already established.
+
+Validate compile reuse over representative changing shapes locally. Keep qualification sweeps and compilation probes out of the PR unless a small durable regression test is justified by a real coverage gap. Do not remove a necessary specialization or omit a genuine compile-key dependency merely to reduce variant counts; the goal is justified, bounded compilation cost with correct runtime behavior.
+
 ## Check the entire dependency and numerical path
 
 Trace producer → preparation → attention → reduction → output for affected families, including the corresponding Keeps/Swaps and 1CTA/2CTA paths when relevant.

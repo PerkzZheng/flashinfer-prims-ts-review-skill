@@ -1,6 +1,6 @@
 ---
 name: review-prims-ts-attention
-description: Review or clean up FlashInfer Prims-TS attention PRs and branches using PerkzZheng's guidance on test scope, consistent naming, avoiding leading underscores, preparation packages, support constraints, and kernel correctness and performance. Use for task-scheduled context, decode, MLA, sparse and Sage attention changes; not as a general policy for unrelated CUDA projects.
+description: Review or clean up FlashInfer Prims-TS attention PRs and branches using PerkzZheng's guidance on test scope, consistent naming, avoiding leading underscores, preparation packages, support constraints, JIT specialization cost, and kernel correctness and performance. Use for task-scheduled context, decode, MLA, sparse and Sage attention changes; not as a general policy for unrelated CUDA projects.
 ---
 
 # Review Prims-TS Attention
@@ -24,6 +24,7 @@ Read [the review guidance](references/review-guidance.md) before reviewing. Cons
 3. **Avoid leading `_` where possible.** Prefer descriptive names, feature prefixes and coherent modules. Being an implementation detail alone is not a sufficient reason for the prefix. Keep an underscore-prefixed name only for a concrete requirement or compatibility; inspect callers and exports when renaming. Ordinary Python `snake_case` remains appropriate.
 4. **Isolate specialized preparation.** Group variant preparation, layouts and helpers in a feature package such as `prims_ts/sage/`. Share compatible components across kernels while retaining native task/resource ownership. Extend existing core mechanisms instead of copying an entire kernel family.
 5. **Explain unsupported combinations.** Distinguish hardware/ABI constraints, real implementation/resource limitations and missing validation. A page-size-32-only test history does not justify a page-size-32-only runtime guard. Validate structurally legal combinations and broaden admission when supported by evidence; report unresolved coverage gaps without calling them fundamental limitations.
+6. **Avoid unnecessary static compilation parameters.** Keep changing inference dimensions, especially batch size and Q/KV sequence lengths, runtime unless specialization has a concrete implementation need or measured benefit that justifies its JIT cost. Inventory newly added compile-time parameters and ask the user to check their necessity and expected value ranges against real inference traffic. Use known workload information first; ask for missing shape/churn assumptions rather than silently accepting exact-size specializations. Check cold compilation, first-use latency and the number of compiled variants, not only warmed kernel speed.
 
 ## Trace correctness, reuse and cost
 
@@ -39,6 +40,6 @@ For performance claims, compare equivalent layouts, inputs, precision, graph/cac
 
 Match validation to the actual change. Use existing focused correctness tests, then affected suites and representative hardware checks where warranted. Broader local campaigns need not be committed. Do not weaken numerical references or tolerances to obtain a pass, and do not claim unavailable hardware or unexecuted CI as validated.
 
-For review-only work, lead with actionable findings, their source locations, observable consequences and the smallest coherent remedy. Explain the reason for a support restriction rather than only labeling it unsupported. State any evidence gaps explicitly.
+For review-only work, lead with actionable findings, their source locations, observable consequences and the smallest coherent remedy. Explain the reason for a support restriction rather than only labeling it unsupported. When compilation parameters change, include their specialization rationale, expected variant growth and JIT/inference impact, and request the user's workload check. State any evidence gaps explicitly.
 
 For authorized cleanup, keep the final diff limited to the agreed behavior, coherent structure, necessary tests and current public documentation. Verify the final head and report what changed, what ran and what remains unresolved. Keep PR descriptions focused on final behavior and current evidence, not the development campaign. Follow the user's authorization for publication and thread resolution.

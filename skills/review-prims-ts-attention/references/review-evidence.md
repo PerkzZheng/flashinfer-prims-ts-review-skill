@@ -17,6 +17,7 @@ The scope includes the task-scheduled attention tree, its metadata/bindings, and
 - Avoid leading `_` where possible; prefer clear descriptive names. PerkzZheng clarified: “we should avoid "_" if possible. it is not clear.”
 - Put specialized attention variants with preparation code in a separate directory, following `prims_ts/sage/`.
 - Distinguish real implementation limitations from combinations that have simply not been validated. Avoid support restrictions based only on missing validation, such as an arbitrary page-size limitation.
+- Avoid unnecessary static compilation parameters, particularly batch size and sequence lengths, because they can cause excessive JIT compilation in real inference. Explicitly ask users to check newly added specialization parameters and their workload assumptions. This preference was clarified on 2026-10-23; it supplements the historical PR evidence rather than reporting a new benchmark result.
 
 The underscore preference comes directly from PerkzZheng's clarification. Default to avoiding leading/private prefixes, with exceptions only for concrete naming requirements or compatibility. Ordinary snake_case word separators remain consistent with the requested cross-kernel Python naming style. Historical review comments are supporting context, not a claim that every underscore spelling is prohibited.
 
