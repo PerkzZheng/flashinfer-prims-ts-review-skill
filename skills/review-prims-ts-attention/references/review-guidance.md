@@ -150,6 +150,8 @@ Explicit caller preconditions remain obligations: removing overlap checks does n
 
 ## Require useful evidence and a concise handoff
 
+When timing process-local kernel patches, ensure compilation/cache identity includes the patched implementation or force fresh compilation. Record patch/source identity; changing an in-memory function does not necessarily invalidate a persistent kernel cache.
+
 Measure equivalent layouts, precision, inputs, metadata, graph/cache conditions and hardware. Include preparation and reduction in complete-path claims, and identify component-only results separately. Explain the source of a speedup and show relevant unchanged paths for regressions. Compare the new supported configuration against the previous implementation where that is the claimed benefit.
 
 Check ordinary and localized placement separately when tuning resource profiles. A gain under one placement does not justify a regressing automatic default elsewhere. When the requested scope retains such tuning, keep it as an explicit opt-in, document its resource/toolchain requirements and report the tradeoff. Do not dispatch on hidden benchmark-only placement information.
@@ -159,6 +161,8 @@ Keep the PR description focused on final behavior, supported contracts/limits, t
 Before handoff, verify that the final diff contains the needed core changes, a coherent preparation boundary, consistent names/visibility, minimal maintained tests, current API documentation, and validation evidence for the actual reviewed head. Fix the common cause across affected kernel families when appropriate; do not broaden the PR into a full kernel unification merely because a review discussed it as future work.
 
 ## Prepare an authorized PR
+
+For optimization consolidation, inventory the earlier promising kernel profiles and ideas before reducing the diff. Mark each as integrated, already represented upstream, rejected by current-base evidence, or still unqualified. A default-dispatch matrix does not requalify all stage-count, tile, resource-layout and prefetch candidates. Recheck the promising omitted candidates and retain useful placement-dependent choices as explicit profiles when that is the requested scope; exclude local artifacts without discarding justified kernel tuning.
 
 When the user asks for a rebase or publication, preserve the previous head before rewriting history and fetch the public repository's requested base. Resolve conflicts against the current implementation, then review the complete base-to-head diff; a clean rebase alone does not validate behavior after upstream changes. Re-run affected correctness and performance checks when the rebase or cleanup changes generated code, dispatch or the comparator. Do not present earlier-base measurements as results against the new main.
 

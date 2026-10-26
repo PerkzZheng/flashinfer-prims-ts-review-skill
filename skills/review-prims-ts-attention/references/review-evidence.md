@@ -295,6 +295,17 @@ The proposed frozen tuning struct groups compile-time fine-tuning and preserves 
 
 The support-limit clarification also matches PerkzZheng's [page-size review in #6937](https://github.com/flashinfer-ai/flashinfer/pull/6937#discussion_r4344202129), which notes that a page-size-32 limitation can be relaxed, and [#5351](https://github.com/flashinfer-ai/flashinfer/pull/5351#discussion_r4056212656), which questions whether a fixed-query restriction is a real limitation and asks about variable or other fixed query lengths. These comments motivate investigating and qualifying the general case; they are not proof that every untested geometry is correct.
 
+## Author clarification: preserve the useful tuning campaign (2026-10-25)
+
+After seeing the rebased Rubin decode PR's benchmark table, PerkzZheng
+questioned whether the PR retained only the Q64/KV256 specialization and
+reminded the agent that multiple kernels, KV-stage choices and other ideas
+had been tuned. The author confirmed requalifying the remaining stage-count
+and prefetch candidates and retaining useful explicit profiles or justified
+dispatch rules. This is working-session scope guidance: artifact cleanup must
+not be presented as complete optimization consolidation when promising
+candidates remain unqualified against the new base.
+
 ## Author clarification: placement-sensitive resource tuning (2026-10-25)
 
 During the Rubin decode PR cleanup, current-main comparisons showed that
