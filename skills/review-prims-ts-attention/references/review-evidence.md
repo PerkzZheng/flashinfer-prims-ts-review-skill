@@ -295,6 +295,15 @@ The proposed frozen tuning struct groups compile-time fine-tuning and preserves 
 
 The support-limit clarification also matches PerkzZheng's [page-size review in #6937](https://github.com/flashinfer-ai/flashinfer/pull/6937#discussion_r4344202129), which notes that a page-size-32 limitation can be relaxed, and [#5351](https://github.com/flashinfer-ai/flashinfer/pull/5351#discussion_r4056212656), which questions whether a fixed-query restriction is a real limitation and asks about variable or other fixed query lengths. These comments motivate investigating and qualifying the general case; they are not proof that every untested geometry is correct.
 
+## Author clarification: placement-sensitive resource tuning (2026-10-25)
+
+During the Rubin decode PR cleanup, current-main comparisons showed that
+larger resource profiles helped localized runs while regressing ordinary
+placement. Given the choice of removing those profiles or retaining them as
+explicit opt-ins with conservative automatic defaults, PerkzZheng selected
+“Keep explicit opt-in profiles.” This preference is specific to the requested
+PR scope; it is not a claim that every resource profile improves performance.
+
 ## Author clarification: PR scope and publication (2026-10-25)
 
 In an explicit cleanup-and-publication request, PerkzZheng asked to rebase onto

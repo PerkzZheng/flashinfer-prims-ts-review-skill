@@ -152,6 +152,8 @@ Explicit caller preconditions remain obligations: removing overlap checks does n
 
 Measure equivalent layouts, precision, inputs, metadata, graph/cache conditions and hardware. Include preparation and reduction in complete-path claims, and identify component-only results separately. Explain the source of a speedup and show relevant unchanged paths for regressions. Compare the new supported configuration against the previous implementation where that is the claimed benefit.
 
+Check ordinary and localized placement separately when tuning resource profiles. A gain under one placement does not justify a regressing automatic default elsewhere. When the requested scope retains such tuning, keep it as an explicit opt-in, document its resource/toolchain requirements and report the tradeoff. Do not dispatch on hidden benchmark-only placement information.
+
 Keep the PR description focused on final behavior, supported contracts/limits, the relevant baseline and latest absolute performance numbers with units. Keep campaign history and local artifacts out. Do not promote one review's tolerance, shape cohort or instruction preference into an unconditional rule.
 
 Before handoff, verify that the final diff contains the needed core changes, a coherent preparation boundary, consistent names/visibility, minimal maintained tests, current API documentation, and validation evidence for the actual reviewed head. Fix the common cause across affected kernel families when appropriate; do not broaden the PR into a full kernel unification merely because a review discussed it as future work.
