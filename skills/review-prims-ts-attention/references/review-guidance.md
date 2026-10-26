@@ -11,6 +11,7 @@ The central question is: **does this change extend a reusable attention generato
 - Existing public execution coverage is generally more valuable than a new test of flags, defaults, private fields, exact resource counts, selected tiles/splits, internal call ordering, source strings, or a mocked path that bypasses the behavior under review. Do not pin a mutable policy choice as if it were an API guarantee.
 - A real GPU test can still be unnecessary: repeating the same feature across a large parameter product, building a generic fixture for a few cases, or asserting wrapper internals does not justify its maintenance cost. Keep the independent numerical reference and representative boundaries that actually matter.
 - Do not interpret test reduction as permission to remove meaningful coverage. Variable Q/KV lengths, tails, masking, changed-input graph replay, and a distinct affected kernel family may require a small maintained case. A targeted sanitizer test can also be justified when numerical output alone cannot reveal an invalid read.
+- When a test's purpose is questioned, identify the distinct execution branch before deciding to remove it. Random inputs may exercise only a held softmax anchor; late keys that raise the maximum can be needed to test re-anchoring. Explain that purpose in the test name and merge related layout cases. Conversely, avoid repeating full type/range and validation-mode matrices for each new tuning scalar when existing coverage already owns those contracts.
 - Keep trace examples and JSON changes to the smallest set required by the agreed public interface. Avoid a new template, fixture matrix, or test utility package solely to support the review campaign.
 
 Apply this as a scope decision before writing test infrastructure, not as cleanup after adding hundreds of lines. The historical validation repository is `PerkzZheng/flashinfer-prims-ts-validation`; confirm the intended comparator and workflow for the current task rather than hard-coding that repository into unrelated reviews.
@@ -27,6 +28,7 @@ Read the analogous context, FMHA decode and MLA paths before adding a name. Make
 | Variant helpers | Use a recognizable, consistent feature prefix, such as `sage_`, where imported helpers could be confused with generic helpers. Do not mix competing prefixes for the same concept. |
 | Boolean settings | Use booleans for boolean semantics and the peer `use`/`has`/`enable` convention. Separate independent facts instead of hiding one inside an unrelated profile predicate. |
 | Dimensions and offsets | State whether a value counts bytes, elements, words, tokens, heads, stages, instances or physical pages. Name semantic and storage extents separately. |
+| Helper behavior | Distinguish a range check that rejects invalid values from clamping, normalization or preparation. Name the operation the implementation actually performs; do not infer changed semantics from a reviewer's tentative wording. |
 
 Avoid vague abbreviations such as `mu`, `VC`, `direct`, `uniform`, or `coalesced` without defining the mathematical or memory-layout meaning. Rename new ambiguity at its source and update callers and documentation together; avoid unrelated repository-wide renaming.
 
@@ -40,6 +42,14 @@ Default to descriptive names without leading underscores for helpers, types, fie
 - Check callers, imports and exports when renaming. Removing a prefix does not automatically promote a helper to a supported public API; keep intentional exports explicit.
 - Keep the cleanup within the reviewed scope and avoid redundant aliases introduced only for cosmetic renaming.
 - Ordinary `snake_case` word separators remain appropriate for established Python names such as `tile_size_q` and `tile_size_kv`; this preference concerns unclear leading/private prefixes.
+
+## Use a cohesive tuning configuration
+
+When adding related fine-tuning options, prefer a small immutable typed configuration, such as the proposed `MlaDecodeTuning`, over repeatedly extending wrapper, one-shot and planning signatures with scalar keywords. Reuse an existing appropriate config and add fields for real supported behavior; do not introduce a generic tuning framework or speculative options.
+
+Document each field's units, bounds and override semantics. For example, an unspecified softmax threshold can retain an entry point's default, while explicit `0.0` requests exact rescaling; those values are not interchangeable if a sparse schedule already defers correction. Keep intentional dense/sparse default differences explicit and resolve them consistently through callers and compilation.
+
+The tuning object groups justified compile-time choices. It does not make batch size, sequence length, per-request tensors or other changing inputs static by default. Its fields still need the JIT-cost review below; immutability is not evidence that every value deserves a separate kernel.
 
 ## Give specialized preparation code a feature package
 
@@ -70,6 +80,12 @@ Package organization does not justify duplicating MLA frontends, load/MMA tasks,
 - Derive generic loops and tail handling from supported geometry. Do not spell out one new head dimension or customer shape throughout the implementation when a shared loop can express it.
 - Use small functions for repeated conditions or coherent transformations. Remove unused alternatives and wrappers that only forward calls; avoid a second configuration framework or custom debug TaskManager.
 
+### Explain prefetch and buffering precisely
+
+For a prefetch change, identify the payload (for example, page IDs rather than K/V values), storage location, producer warp, current/next buffer lifetime, and lead time before first use. Distinguish reusing a register-held window from fetching its successor early. Existing loader warps prefetching into registers and a dedicated producer staging into SMEM have different resource and synchronization costs; a shared label such as “prefetch” does not make them the same design.
+
+Check the actual overlap with slot waits, payload loads and computation. A benefit on FP8 does not establish a BF16 or sparse-path benefit: their payload latency, producer roles and bottlenecks may differ. Compare the relevant controls and, where a timing claim depends on it, confirm the emitted load schedule. Look for reusable mechanisms, but respect an explicitly accepted small optimization whose broader producer/SMEM redesign is deferred.
+
 ## Separate policy facts, runtime state and compile identity
 
 Review tile/split decisions using the actual work unit, including `num_instances_kv * tile_size_kv`, grouped Q/head rows, SM occupancy and complete resource footprint. Explain measured crossover choices and correctness limits separately. A specific batch-size exception or unexplained threshold is not a substitute for a policy model.
@@ -85,6 +101,8 @@ For every unsupported kernel combination or admission guard, identify the actual
 | Validation has not been performed | Treat this as work to complete, not a permanent support restriction. Validate the structurally legal combinations and enable them when the evidence supports it. |
 
 A page-size restriction such as `page_size == 32` is not justified merely because only page size 32 was tested. Check the actual page/fragment divisibility, addressing, masking, resource and scheduling requirements. If other sizes satisfy them, run representative qualification across the affected paths and replace the arbitrary whitelist with the genuine structural conditions.
+
+When a restriction comes from shared window or staging geometry, audit every consumer, including BF16 and FP8, rather than guarding only the newly optimized dtype. Consider whether padding or grouping several tiles could relax it. If the reviewer explicitly accepts the current recipe's narrower geometry for a small performance change, document that implementation assumption and follow-up separately from an architectural limit; do not force the larger redesign into the accepted scope.
 
 Avoid carrying a historical validation matrix into runtime support policy without investigating it. Run broader qualification locally; commit only the minimal durable accuracy or regression coverage justified by the test-scope rules above. Document implementation constraints and completed validation coverage separately.
 

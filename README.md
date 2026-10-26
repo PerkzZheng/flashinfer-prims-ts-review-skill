@@ -10,6 +10,7 @@ The skill emphasizes:
 - Distinguishing genuine hardware/implementation limitations from missing validation, including arbitrary page-size restrictions.
 - Auditing new static compilation parameters, especially batch size and sequence lengths, for specialization growth and real-inference JIT cost, with an explicit user workload check.
 - Explicit ownership, synchronization, numerical contracts and comparable performance evidence.
+- Cohesive immutable tuning configs, explicit unset/override semantics, and precise prefetch ownership and buffering explanations.
 
 ## Install in Codex
 
@@ -58,7 +59,7 @@ skills/review-prims-ts-attention/
   references/review-evidence.md
 ```
 
-[Review guidance](skills/review-prims-ts-attention/references/review-guidance.md) contains the detailed decision rules. [Review evidence](skills/review-prims-ts-attention/references/review-evidence.md) records public sources, context and the reviewed PR inventory. The evidence was collected on 2026-10-22; historical comments do not define current API support, and current task instructions take precedence.
+[Review guidance](skills/review-prims-ts-attention/references/review-guidance.md) contains the detailed decision rules. [Review evidence](skills/review-prims-ts-attention/references/review-evidence.md) records public sources, context and the reviewed PR inventory. The initial evidence was collected on 2026-10-22, with later author clarifications and a 2026-10-25 follow-up covering PRs #7019 and #7026. Historical comments do not define current API support, and current task instructions take precedence.
 
 ## License
 

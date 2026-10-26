@@ -10,6 +10,15 @@ Changed-file screening identified 68 Prims-TS attention PRs. Their complete pagi
 
 The scope includes the task-scheduled attention tree, its metadata/bindings, and attention-ts tests. Unrelated GEMM/MoE, TRT-LLM-only and SM120 non-TS work was screened out. Search discovers the available history at retrieval time; deleted comments, unpublished draft text and future feedback are not claimed. This package includes the public source links and selected excerpts that support the review guidance; raw authenticated API responses are not distributed.
 
+### Follow-up requested on 2026-10-25
+
+The full paginated inline-comment, review and discussion lists for PRs [#7019](https://github.com/flashinfer-ai/flashinfer/pull/7019) and [#7026](https://github.com/flashinfer-ai/flashinfer/pull/7026) were read separately from the initial collection. PerkzZheng authored 18 entries: 11 nonempty inline comments and seven empty review events. Author replies were read to resolve context; no new kernel measurements are claimed by this skill update.
+
+Retrieved at `2026-10-26T01:58:17.286837+00:00`. Reviewed heads:
+
+- [#7019: perf(prims-ts): prefetch page IDs for FP8 2CTA dense MLA K/V loaders](https://github.com/flashinfer-ai/flashinfer/pull/7019) — `688e04b2e6f59b7fbcc60eb251634477b51433b8`.
+- [#7026: feat(prims-ts): opt-in softmax_rescale_threshold_log2 (skip correction) for dense and sparse MLA decode](https://github.com/flashinfer-ai/flashinfer/pull/7026) — `0df72d08f0a6349cc2f9824b0d10ae7fef9ff2e4`.
+
 ## Explicit preferences from PerkzZheng
 
 - Do not add local-validation-only tests to PRs, especially functionality-related probes.
@@ -203,6 +212,78 @@ The underscore preference comes directly from PerkzZheng's clarification. Defaul
 
 > for "Standalone performance" part of the MR description, we should only mention how the newly added configurations (like G=8) helps with the performance compared to previous implementation.
 
+## Follow-up source comments: PRs #7019 and #7026
+
+### PR #7019: perf(prims-ts): prefetch page IDs for FP8 2CTA dense MLA K/V loaders
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7019#discussion_r4357863371) on `flashinfer/attention/prims_ts/kernels/mla_decode/throughput_2cta/config.py`
+
+> should BF16 also have similar restriction ? ideally, this should not be restricted as we can pad it or even multiple k_tiles's page offsets in one stage, but I am okay with the current implementation to improve performance with fewer changes.
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7019#discussion_r4357878063) on `flashinfer/attention/prims_ts/kernels/mla_decode/throughput_2cta/kernel.py`
+
+> seems that we previously only added prefetching for BF16 ?
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7019#discussion_r4357885034) on `flashinfer/attention/prims_ts/kernels/mla_decode/throughput_2cta/kernel.py`
+
+> I was thinking that we also used prefetching for sparse attention kernels, but it might end up not having gains in those cases. Let me re-visit it later.
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7019#discussion_r4357992117) on `flashinfer/attention/prims_ts/kernels/mla_decode/throughput_2cta/resources.py`
+
+> what does this mean ? does it mean we load one more page offset ahead in registers ?
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7019#discussion_r4373346207) on `flashinfer/attention/prims_ts/kernels/mla_decode/throughput_2cta/kernel.py`
+
+> it makes sense as BF16 loading takes more latency. Thanks.
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7019#discussion_r4373378024) on `flashinfer/attention/prims_ts/kernels/mla_decode/throughput_2cta/kernel.py`
+
+> okay, I took a further look and it seems that you are prefetching page indices by current warps to register buffers instead of smem buffers. I am good with this changes for now, but we can revisit smem buffers with producers later (i.e. reuse sparse mla's work if possible).
+
+**Thread context.** The author [confirmed that BF16 and FP8 share the window-geometry assumption](https://github.com/flashinfer-ai/flashinfer/pull/7019#discussion_r4359468769) and applied the guard to both dense paths. Padding or packing multiple tiles is a possible extension, not proof that the present recipe can ignore its invariant.
+
+The author [distinguished BF16 register-window caching from prefetch](https://github.com/flashinfer-ai/flashinfer/pull/7019#discussion_r4359451926) and reported no obvious gain from adding BF16 lookahead in that experiment. [Sparse MLA uses a separate producer warp](https://github.com/flashinfer-ai/flashinfer/pull/7019#discussion_r4358181425), whereas the accepted dense change uses existing loaders and register buffers. PerkzZheng accepted this scoped improvement and deferred possible SMEM/producer reuse; do not turn that follow-up into a mandatory rewrite or a universal prohibition on SMEM staging.
+
+### PR #7026: feat(prims-ts): opt-in softmax_rescale_threshold_log2 (skip correction) for dense and sparse MLA decode
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4358026888) on `flashinfer/attention/prims_ts/mla_decode.py`
+
+> this seems more like limiting the threshold to the upper bound ? maybe rename it.
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4358041134) on `tests/attention/test_attention_ts_mla_decode.py`
+
+> this seems unnecessary.
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4358041464) on `tests/attention/test_attention_ts_mla_decode.py`
+
+> this seems unnecessary.
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4358047668) on `tests/attention/test_attention_ts_mla_decode.py`
+
+> what this test is used for ?
+
+[Review comment](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4373369386) on `flashinfer/attention/prims_ts/mla_decode.py`
+
+> @yunruis It might be better to create a struct for tuning configs (make it extensive).
+>
+> for example,
+> ```
+> @dataclass(frozen=True)
+> class MlaDecodeTuning:
+>     """Compile-time fine-tuning for one PrimTS MLA decode plan.
+>     ``softmax_rescale_threshold_log2`` is in binades. ``None`` keeps the
+>     entry point's default: exact rescale for dense, and each sparse
+>     schedule's existing deferral for sparse. An explicit value, including
+>     ``0.0``, is compiled into the kernel.
+>     """
+>     softmax_rescale_threshold_log2: float | None = None
+> ```
+
+**Thread context.** The author [clarified that the range helper rejects rather than clamps](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4359520839). Its name should describe that behavior; the reviewer's tentative “limiting” wording does not authorize changing numerical semantics.
+
+The [range-matrix test](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4359522098) and [separate validation-disabled bound test](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4359526757) were removed. In contrast, the author [explained the re-anchor test's distinct branch](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4359533044): random inputs exercised only the frozen anchor, so spiking late keys was needed to force re-anchoring. The test was renamed and related Keeps cases consolidated. This supports minimal branch-specific coverage, not deleting every test whose purpose was initially questioned.
+
+The proposed frozen tuning struct groups compile-time fine-tuning and preserves unspecified versus explicit-zero semantics. It does not make live batch/sequence metadata part of tuning, nor does it waive the specialization-cost audit. The class name and threshold default are a concrete design example, not a required universal schema or proof that the proposal was already implemented at the retrieved head.
 ## Read the final discussion before generalizing
 
 - **V padding is not a blanket prohibition on clearing.** The initial request to move work to the KV writer in [#4829](https://github.com/flashinfer-ai/flashinfer/pull/4829#discussion_r3946208438) was followed by a request for broader performance checks and [acceptance of optional tail handling](https://github.com/flashinfer-ai/flashinfer/pull/4829#discussion_r3964260638). Preserve the negotiated correctness contract.
@@ -218,7 +299,7 @@ The support-limit clarification also matches PerkzZheng's [page-size review in #
 
 At upstream main `eb38f470d04d1cf625313267349f3174db2866ce`, [the Sage package](https://github.com/flashinfer-ai/flashinfer/tree/eb38f470d04d1cf625313267349f3174db2866ce/flashinfer/attention/prims_ts/sage) contains `config.py`, `layout.py`, `prepare.py`, `index.py`, `modes.py`, `int32_scores.py` and `__init__.py`. Its package documentation explicitly shares these components between context and decode while each kernel retains its own resources, pipelines and softmax integration. Treat this as an ownership example, not a mandatory seven-file template.
 
-## PRs containing written entries
+## PRs from the initial collection containing written entries
 
 | PR | Title | Nonempty entries |
 | --- | --- | --- |
