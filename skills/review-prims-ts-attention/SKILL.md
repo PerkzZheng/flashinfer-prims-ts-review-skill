@@ -47,4 +47,6 @@ For review-only work, lead with actionable findings, their source locations, obs
 
 For authorized cleanup, keep the final diff limited to the agreed behavior, coherent structure, necessary tests and current public documentation. Verify the final head and report what changed, what ran and what remains unresolved. Keep PR descriptions focused on final behavior and current evidence, not the development campaign. Follow the user's authorization for publication and thread resolution.
 
+For authorized commits on PerkzZheng's behalf, use his established Git identity for author, committer and `Signed-off-by`, rather than an agent identity. Use his public GitHub noreply address for public GitHub pushes; follow the identity and sign-off details in the PR handoff guidance below.
+
 When preparing an authorized rebase or PR, use [the PR handoff guidance](references/review-guidance.md#prepare-an-authorized-pr): preserve the previous head, compare with the fetched public base, exclude unnecessary documents and local debug tests, and validate the final diff before publication. Keep the authored title and description short while following the repository's PR template.

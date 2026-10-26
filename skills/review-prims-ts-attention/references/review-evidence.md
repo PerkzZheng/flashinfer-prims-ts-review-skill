@@ -306,6 +306,17 @@ dispatch rules. This is working-session scope guidance: artifact cleanup must
 not be presented as complete optimization consolidation when promising
 candidates remain unqualified against the new base.
 
+## Author clarification: commit identity and sign-off (2026-10-25)
+
+After publication of the Rubin decode PR, PerkzZheng asked to sign off as
+PerkzZheng instead and record that preference in the skill. Apply this to
+authorized commits on his behalf: use his configured or established Git
+identity for author and committer and include the matching `Signed-off-by`
+trailer. GitHub rejected the repository-configured private email with GH007;
+use his existing public GitHub noreply identity without changing privacy settings.
+This is direct working-session guidance, not a public-review quote
+or standing authorization to change unrelated contributors' history.
+
 ## Author clarification: placement-sensitive resource tuning (2026-10-25)
 
 During the Rubin decode PR cleanup, current-main comparisons showed that
