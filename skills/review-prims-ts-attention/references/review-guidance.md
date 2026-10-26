@@ -7,6 +7,7 @@ The central question is: **does this change extend a reusable attention generato
 ## Separate validation work from tests shipped in the PR
 
 - Do not add local-validation-only tests to the PR, including functionality probes written to check an implementation during development. Keep temporary probes, tuning scripts, standalone benchmark helpers, exhaustive matrices and debug instrumentation in a local workspace or the agreed validation repository.
+- Apply the same scope rule to documents: exclude experiment diaries, local paths, benchmark histories and review reports from the source PR. Retain concise documentation only for behavior, requirements or contracts changed by the implementation; an extensive campaign does not require an extensive kernel README.
 - Retain compact accuracy tests and important public-contract/regression tests. For each addition, identify the observable failure it detects and the gap in existing coverage. Prefer an added case in the existing context, decode, MLA, sparse, or shared-feature suite over another test module.
 - Existing public execution coverage is generally more valuable than a new test of flags, defaults, private fields, exact resource counts, selected tiles/splits, internal call ordering, source strings, or a mocked path that bypasses the behavior under review. Do not pin a mutable policy choice as if it were an API guarantee.
 - A real GPU test can still be unnecessary: repeating the same feature across a large parameter product, building a generic fixture for a few cases, or asserting wrapper internals does not justify its maintenance cost. Keep the independent numerical reference and representative boundaries that actually matter.
@@ -154,3 +155,13 @@ Measure equivalent layouts, precision, inputs, metadata, graph/cache conditions 
 Keep the PR description focused on final behavior, supported contracts/limits, the relevant baseline and latest absolute performance numbers with units. Keep campaign history and local artifacts out. Do not promote one review's tolerance, shape cohort or instruction preference into an unconditional rule.
 
 Before handoff, verify that the final diff contains the needed core changes, a coherent preparation boundary, consistent names/visibility, minimal maintained tests, current API documentation, and validation evidence for the actual reviewed head. Fix the common cause across affected kernel families when appropriate; do not broaden the PR into a full kernel unification merely because a review discussed it as future work.
+
+## Prepare an authorized PR
+
+When the user asks for a rebase or publication, preserve the previous head before rewriting history and fetch the public repository's requested base. Resolve conflicts against the current implementation, then review the complete base-to-head diff; a clean rebase alone does not validate behavior after upstream changes. Re-run affected correctness and performance checks when the rebase or cleanup changes generated code, dispatch or the comparator. Do not present earlier-base measurements as results against the new main.
+
+Keep local qualification outside the PR. Prefer adding a numerical case to an existing suite over shipping a dedicated architecture-probe module, a planner spy, or exact heuristic snapshots. Retain the independent reference and the distinct execution branch the case protects; removing debugging machinery must not remove meaningful coverage.
+
+Use the destination repository's PR template and keep the authored content short: the concrete problem, final behavior, and relevant current validation. Performance claims need the GPU, shape, precision and absolute before/after values with units. Distinguish memory placement and compute partitions when they change the comparison. Leave tuning history, raw logs and local artifact paths outside the description.
+
+Push only within the user's authorized scope. For a fork PR, verify the head owner/branch and public base, then check that the remote and PR heads match the validated local head. Reuse an existing PR for that branch when appropriate. Skill updates, CI-trigger comments and other external changes require their own authorization; a review request alone does not authorize them.

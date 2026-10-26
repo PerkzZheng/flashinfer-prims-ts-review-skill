@@ -11,6 +11,7 @@ The skill emphasizes:
 - Auditing new static compilation parameters, especially batch size and sequence lengths, for specialization growth and real-inference JIT cost, with an explicit user workload check.
 - Explicit ownership, synchronization, numerical contracts and comparable performance evidence.
 - Cohesive immutable tuning configs, explicit unset/override semantics, and precise prefetch ownership and buffering explanations.
+- PR scope after an authorized rebase: exclude unnecessary documents and local debug tests, validate against the current public base, and keep repository-template descriptions short and precise.
 
 ## Install in Codex
 

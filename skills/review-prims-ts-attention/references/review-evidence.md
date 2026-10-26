@@ -295,6 +295,20 @@ The proposed frozen tuning struct groups compile-time fine-tuning and preserves 
 
 The support-limit clarification also matches PerkzZheng's [page-size review in #6937](https://github.com/flashinfer-ai/flashinfer/pull/6937#discussion_r4344202129), which notes that a page-size-32 limitation can be relaxed, and [#5351](https://github.com/flashinfer-ai/flashinfer/pull/5351#discussion_r4056212656), which questions whether a fixed-query restriction is a real limitation and asks about variable or other fixed query lengths. These comments motivate investigating and qualifying the general case; they are not proof that every untested geometry is correct.
 
+## Author clarification: PR scope and publication (2026-10-25)
+
+In an explicit cleanup-and-publication request, PerkzZheng asked to rebase onto
+latest public FlashInfer main, keep only changes needed for the PR, exclude
+unnecessary documents and local debugging scripts/tests, and use a short,
+precise PR description. This is direct author guidance from the working
+session, not a quotation from a public review thread.
+
+Apply that preference by separating qualification artifacts from maintained
+code and minimal regression coverage. Preserve concise documentation of real
+requirements and changed contracts. Publication and updates to the skill
+repository were explicitly authorized in that task; this is not standing
+authorization for future review-only requests.
+
 ## Sage organization at the reviewed revision
 
 At upstream main `eb38f470d04d1cf625313267349f3174db2866ce`, [the Sage package](https://github.com/flashinfer-ai/flashinfer/tree/eb38f470d04d1cf625313267349f3174db2866ce/flashinfer/attention/prims_ts/sage) contains `config.py`, `layout.py`, `prepare.py`, `index.py`, `modes.py`, `int32_scores.py` and `__init__.py`. Its package documentation explicitly shares these components between context and decode while each kernel retains its own resources, pipelines and softmax integration. Treat this as an ownership example, not a mandatory seven-file template.
