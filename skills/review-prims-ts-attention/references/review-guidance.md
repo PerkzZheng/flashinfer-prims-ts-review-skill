@@ -81,6 +81,16 @@ Package organization does not justify duplicating MLA frontends, load/MMA tasks,
 - Derive generic loops and tail handling from supported geometry. Do not spell out one new head dimension or customer shape throughout the implementation when a shared loop can express it.
 - Use small functions for repeated conditions or coherent transformations. Remove unused alternatives and wrappers that only forward calls; avoid a second configuration framework or custom debug TaskManager.
 
+### Document every helper
+
+Every helper function in the reviewed code must have a purpose docstring or an adjacent function comment. This includes existing helpers within the review scope, newly added or modified helpers, nested functions, resource helper methods, and CuTe DSL/JIT/device helpers across the affected kernel families. Enumerate the actual helper definitions when checking coverage; checking only files named `helpers` misses functions elsewhere.
+
+- Explain the operation and result in concrete terms. State relevant input/output units, shapes, layouts, dtypes, side effects and caller preconditions where they are needed to use or understand the helper. Distinguish conversion, view/address calculation, validation and synchronization.
+- Explain non-obvious implementation steps beside the code: formulas and constants, index/scale mapping, rounding or saturation, masking and tails, and the reason for a performance-sensitive instruction or branch. For synchronization helpers, identify producer/consumer ownership, the data being published or acquired, and the buffer lifetime protected by the operation.
+- Keep simple helpers concise; one accurate sentence can be sufficient. Comments must add information beyond repeating the function name or narrating obvious statements. An explanation in a PR description or distant README does not replace documentation at the helper definition.
+- Check comments against the implementation and callers, including the applicable 1CTA/2CTA or Keeps/Swaps variants. Update stale explanations when behavior changes. Do not claim a numerical, ordering or performance guarantee that the code does not establish.
+- Report missing, misleading or insufficient helper documentation with source locations during review. During authorized cleanup, fix it before handoff. Keep the audit within the agreed review scope rather than expanding it into unrelated repository-wide edits.
+
 ### Explain prefetch and buffering precisely
 
 For a prefetch change, identify the payload (for example, page IDs rather than K/V values), storage location, producer warp, current/next buffer lifetime, and lead time before first use. Distinguish reusing a register-held window from fetching its successor early. Existing loader warps prefetching into registers and a dedicated producer staging into SMEM have different resource and synchronization costs; a shared label such as “prefetch” does not make them the same design.
@@ -158,7 +168,7 @@ Check ordinary and localized placement separately when tuning resource profiles.
 
 Keep the PR description focused on final behavior, supported contracts/limits, the relevant baseline and latest absolute performance numbers with units. Keep campaign history and local artifacts out. Do not promote one review's tolerance, shape cohort or instruction preference into an unconditional rule.
 
-Before handoff, verify that the final diff contains the needed core changes, a coherent preparation boundary, consistent names/visibility, minimal maintained tests, current API documentation, and validation evidence for the actual reviewed head. Fix the common cause across affected kernel families when appropriate; do not broaden the PR into a full kernel unification merely because a review discussed it as future work.
+Before handoff, verify that the final diff contains the needed core changes, a coherent preparation boundary, consistent names/visibility, accurate documentation for every in-scope helper, minimal maintained tests, current API documentation, and validation evidence for the actual reviewed head. Fix the common cause across affected kernel families when appropriate; do not broaden the PR into a full kernel unification merely because a review discussed it as future work.
 
 ## Prepare an authorized PR
 

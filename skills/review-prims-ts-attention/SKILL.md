@@ -1,6 +1,6 @@
 ---
 name: review-prims-ts-attention
-description: Review or clean up FlashInfer Prims-TS attention PRs and branches using PerkzZheng's guidance on test scope, consistent naming, avoiding leading underscores, preparation packages, support constraints, JIT specialization cost, and kernel correctness and performance. Use for task-scheduled context, decode, MLA, sparse and Sage attention changes; not as a general policy for unrelated CUDA projects.
+description: Review or clean up FlashInfer Prims-TS attention PRs and branches using PerkzZheng's guidance on test scope, consistent naming, avoiding leading underscores, helper documentation, preparation packages, support constraints, JIT specialization cost, and kernel correctness and performance. Use for task-scheduled context, decode, MLA, sparse and Sage attention changes; not as a general policy for unrelated CUDA projects.
 ---
 
 # Review Prims-TS Attention
@@ -26,6 +26,8 @@ Read [the review guidance](references/review-guidance.md) before reviewing. Cons
 5. **Explain unsupported combinations.** Distinguish hardware/ABI constraints, real implementation/resource limitations and missing validation. A page-size-32-only test history does not justify a page-size-32-only runtime guard. Validate structurally legal combinations and broaden admission when supported by evidence; report unresolved coverage gaps without calling them fundamental limitations.
 6. **Avoid unnecessary static compilation parameters.** Keep changing inference dimensions, especially batch size and Q/KV sequence lengths, runtime unless specialization has a concrete implementation need or measured benefit that justifies its JIT cost. Inventory newly added compile-time parameters and ask the user to check their necessity and expected value ranges against real inference traffic. Use known workload information first; ask for missing shape/churn assumptions rather than silently accepting exact-size specializations. Check cold compilation, first-use latency and the number of compiled variants, not only warmed kernel speed.
 7. **Group related tuning controls.** Prefer a small immutable typed tuning configuration over a growing list of scalar tuning keywords. State units, bounds and the distinction between an unspecified value and an explicit override such as zero. Keep runtime request metadata separate, and apply the JIT-specialization audit to every compile-time field.
+
+8. **Document every helper.** Require a concise docstring or adjacent function comment for every helper in the reviewed code, including shared helpers, nested helpers, resource methods and JIT/device helpers. Explain what it does and the contract callers rely on. Add inline comments for non-obvious implementation choices, layout/precision rules and synchronization. Audit existing helpers within the review scope as well as new ones; see [helper documentation](references/review-guidance.md#document-every-helper).
 
 ## Trace correctness, reuse and cost
 

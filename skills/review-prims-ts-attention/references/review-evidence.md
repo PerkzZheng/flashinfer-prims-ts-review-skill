@@ -28,6 +28,8 @@ Retrieved at `2026-10-26T01:58:17.286837+00:00`. Reviewed heads:
 - Distinguish real implementation limitations from combinations that have simply not been validated. Avoid support restrictions based only on missing validation, such as an arbitrary page-size limitation.
 - Avoid unnecessary static compilation parameters, particularly batch size and sequence lengths, because they can cause excessive JIT compilation in real inference. Explicitly ask users to check newly added specialization parameters and their workload assumptions. This preference was clarified on 2026-10-23; it supplements the historical PR evidence rather than reporting a new benchmark result.
 
+- Document every helper function with proper comments explaining what it does. PerkzZheng explicitly requested this local and remote skill update on 2026-10-26. This is a direct preference supplement, not a claim about a newly retrieved public PR review. The guidance applies it to all helpers within the agreed review scope, with concise purpose documentation and inline explanations for non-obvious behavior.
+
 The underscore preference comes directly from PerkzZheng's clarification. Default to avoiding leading/private prefixes, with exceptions only for concrete naming requirements or compatibility. Ordinary snake_case word separators remain consistent with the requested cross-kernel Python naming style. Historical review comments are supporting context, not a claim that every underscore spelling is prohibited.
 
 ## Representative source comments

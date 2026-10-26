@@ -6,6 +6,7 @@ The skill emphasizes:
 
 - Keeping local validation probes and benchmark campaigns out of PRs while retaining minimal, meaningful accuracy and regression coverage.
 - Consistent names across kernels and avoiding leading underscores where possible.
+- Clear purpose comments/docstrings for every helper in the reviewed code, with inline explanations of non-obvious behavior, layouts, precision and synchronization.
 - Separating variant preparation into coherent packages such as `prims_ts/sage/` while reusing core kernel mechanisms.
 - Distinguishing genuine hardware/implementation limitations from missing validation, including arbitrary page-size restrictions.
 - Auditing new static compilation parameters, especially batch size and sequence lengths, for specialization growth and real-inference JIT cost, with an explicit user workload check.
