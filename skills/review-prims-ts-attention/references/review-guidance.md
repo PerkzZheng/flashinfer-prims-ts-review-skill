@@ -7,7 +7,7 @@ The central question is: **does this change extend a reusable attention generato
 ## Separate validation work from tests shipped in the PR
 
 - Do not add local-validation-only tests to the PR, including functionality probes written to check an implementation during development. Keep temporary probes, tuning scripts, standalone benchmark helpers, exhaustive matrices and debug instrumentation in a local workspace or the agreed validation repository.
-- Apply the same scope rule to documents: exclude experiment diaries, local paths, benchmark histories and review reports from the source PR. Retain concise documentation only for behavior, requirements or contracts changed by the implementation; an extensive campaign does not require an extensive kernel README.
+- Apply the same scope rule to documents: exclude experiment diaries, local paths, benchmark histories and review reports from the source PR. Retain concise documentation only for behavior, requirements or contracts changed by the implementation; an extensive campaign does not require an extensive kernel README. When requested, reduce that README to supported combinations and target model recipes, keeping detailed helper/layout explanations beside the code.
 - Retain compact accuracy tests and important public-contract/regression tests. For each addition, identify the observable failure it detects and the gap in existing coverage. Prefer an added case in the existing context, decode, MLA, sparse, or shared-feature suite over another test module.
 - Existing public execution coverage is generally more valuable than a new test of flags, defaults, private fields, exact resource counts, selected tiles/splits, internal call ordering, source strings, or a mocked path that bypasses the behavior under review. Do not pin a mutable policy choice as if it were an API guarantee.
 - A real GPU test can still be unnecessary: repeating the same feature across a large parameter product, building a generic fixture for a few cases, or asserting wrapper internals does not justify its maintenance cost. Keep the independent numerical reference and representative boundaries that actually matter.
@@ -52,7 +52,7 @@ Document each field's units, bounds and override semantics. For example, an unsp
 
 The tuning object groups justified compile-time choices. It does not make batch size, sequence length, per-request tensors or other changing inputs static by default. Its fields still need the JIT-cost review below; immutability is not evidence that every value deserves a separate kernel.
 
-## Give specialized preparation code a feature package
+## Keep specialized preparation and helpers cohesive
 
 Keep variant-specific preparation, scale/index layouts, validation and helper math together under an appropriate subdirectory, for example `flashinfer/attention/prims_ts/sage/` or a justified `vc_attention/` package. A possible division is:
 
@@ -65,7 +65,7 @@ prims_ts/<variant>/
     index.py       # addressing shared by consumers
 ```
 
-These are responsibilities, not a required file checklist. Create only the boundaries the feature needs. The Sage package also demonstrates shared mode names and INT8-score helpers.
+These are responsibilities, not a required file checklist. Create only the boundaries the feature needs. A package is not mandatory for a small cohesive helper set: one feature-named module with section dividers can expose the structure more clearly than several tiny files. Honor an explicit consolidation request and update imports/callers together. Keep task/resource ownership in its kernel family. The Sage package also demonstrates shared mode names and INT8-score helpers.
 
 Keep reusable attention computation in the existing core kernels. A general QK-16/PV-8 capability should extend their precision/configuration model rather than add model-specific branches throughout the task graph. Share preparation and layouts between context and decode when their contracts agree; each kernel can retain its own resources, scheduling and softmax integration.
 
@@ -87,6 +87,9 @@ Every helper function in the reviewed code must have a purpose docstring or an a
 
 - Explain the operation and result in concrete terms. State relevant input/output units, shapes, layouts, dtypes, side effects and caller preconditions where they are needed to use or understand the helper. Distinguish conversion, view/address calculation, validation and synchronization.
 - Explain non-obvious implementation steps beside the code: formulas and constants, index/scale mapping, rounding or saturation, masking and tails, and the reason for a performance-sensitive instruction or branch. For synchronization helpers, identify producer/consumer ownership, the data being published or acquired, and the buffer lifetime protected by the operation.
+- Explain parameters and configuration flags where they are defined: what the enabled/disabled states mean, their units and any caller promise. Expand ambiguous abbreviations such as a warp-specialized MMA flag or a retained-payload flag. Explain the difference between similarly named copies, staging paths and reductions, including why distinct paths remain necessary.
+- Derive addressing constants from tile dimensions, element widths and hardware column/row units. For named PTX layouts such as Layout E/F, link the authoritative section and describe the relevant thread/row/column mapping. State which partials a reduction combines and why; a layout name alone is insufficient.
+- Document each source pool's payload, scale placement, physical stride and index units near descriptor construction, using a small byte/axis diagram when useful. Validation adapters and numerical references must use each pool's actual record stride rather than a logical feature width shared by other formats.
 - Keep simple helpers concise; one accurate sentence can be sufficient. Comments must add information beyond repeating the function name or narrating obvious statements. An explanation in a PR description or distant README does not replace documentation at the helper definition.
 - Check comments against the implementation and callers, including the applicable 1CTA/2CTA or Keeps/Swaps variants. Update stale explanations when behavior changes. Do not claim a numerical, ordering or performance guarantee that the code does not establish.
 - Report missing, misleading or insufficient helper documentation with source locations during review. During authorized cleanup, fix it before handoff. Keep the audit within the agreed review scope rather than expanding it into unrelated repository-wide edits.
@@ -98,6 +101,10 @@ For a prefetch change, identify the payload (for example, page IDs rather than K
 Check the actual overlap with slot waits, payload loads and computation. A benefit on FP8 does not establish a BF16 or sparse-path benefit: their payload latency, producer roles and bottlenecks may differ. Compare the relevant controls and, where a timing claim depends on it, confirm the emitted load schedule. Look for reusable mechanisms, but respect an explicitly accepted small optimization whose broader producer/SMEM redesign is deferred.
 
 ## Separate policy facts, runtime state and compile identity
+
+Put register/stage policy in the owning configuration and have task factories consume it. Reuse an existing setting when its semantics match; do not force loader and MMA roles to share a budget if their live state differs. A derived configuration property can remove a task-side literal without adding another static tuning field. Explain budget arithmetic and validate the resulting resource allocation.
+
+Write down the agreed primary/extra format pairs before simplifying source selection. Predicate names should describe the actual capability and source roles. Remove unreachable reverse-pool or extra-dtype branches when they are outside the requested contract; do not silently broaden the matrix for symmetry. Keep support validation consistent for public planning and independently callable kernel construction without duplicating validation machinery.
 
 Review tile/split decisions using the actual work unit, including `num_instances_kv * tile_size_kv`, grouped Q/head rows, SM occupancy and complete resource footprint. Explain measured crossover choices and correctness limits separately. A specific batch-size exception or unexplained threshold is not a substitute for a policy model.
 
@@ -150,6 +157,7 @@ Trace producer → preparation → attention → reduction → output for affect
 - Express ownership, publication and reuse through the existing TS resources/pipelines. Review extra GMEM→SMEM→register staging, vectorization, transaction counts and all consumers before introducing manual synchronization.
 - Check dense versus boundary tiles, partial dimensions, inactive/empty requests, invalid indices and all-masked rows. Preserve row maxima/sums, FP8 probability scaling, sink mass and reduction/final-output conventions.
 - Explain new constants, formulas and performance mechanisms beside the code. Comments should make tile units, ownership and head/mainloop/tail progression understandable without the review conversation.
+- Check composition with existing output quantization and other requested epilogues. Removing an admission guard is insufficient: account for extra scratch/registers, stage lifetimes and final versus split-reduction stores, then validate output values, scales and graph replay through the public API. Keep a real resource constraint documented while fixing the missing combination.
 - Review changes shared by sparse and dense paths against both. Device admission, instruction support and completed accuracy/performance qualification are separate claims.
 
 ## Validate once at the owning boundary

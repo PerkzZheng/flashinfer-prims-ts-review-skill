@@ -19,6 +19,20 @@ Retrieved at `2026-10-26T01:58:17.286837+00:00`. Reviewed heads:
 - [#7019: perf(prims-ts): prefetch page IDs for FP8 2CTA dense MLA K/V loaders](https://github.com/flashinfer-ai/flashinfer/pull/7019) — `688e04b2e6f59b7fbcc60eb251634477b51433b8`.
 - [#7026: feat(prims-ts): opt-in softmax_rescale_threshold_log2 (skip correction) for dense and sparse MLA decode](https://github.com/flashinfer-ai/flashinfer/pull/7026) — `0df72d08f0a6349cc2f9824b0d10ae7fef9ff2e4`.
 
+### PR #7410 follow-up on 2026-10-26
+
+Read all 30 inline comments and all 30 review threads on [PR #7410](https://github.com/flashinfer-ai/flashinfer/pull/7410), including 29 comments by PerkzZheng, against head `30282843b7935bef6c785838d8a323cce00e5139`. The review was submitted at `2026-10-26T07:18:47Z`; evidence was retrieved starting at `2026-10-26T07:23:37Z`. These are scoped readability, structure and capability requests, not new performance measurements.
+
+- [Explain scale ratios clearly](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374677568): “what is tensor_scale_ratio. can you explain it clearly ?”
+- [Consolidate the cache helpers](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374682514): “move all files under scaled_kv to a single file in helpers/nvfp4_kv.py” with dividers. This motivates a cohesive module when appropriate, not a universal ban on preparation packages.
+- [Respect source roles](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374687044): the mixed recipe is primary FP8 plus extra NVFP4; source predicates should explain that role distinction. [Use capability-specific names](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374712721) consistently.
+- [Document every new helper](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374701670), [supported formats](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374706470), [cache-pool layouts](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374718340), and [addressing constants](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374728722).
+- [Explain similar copy paths](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374736163) and [share duplicated metadata work](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374737935). [Extract reusable loading helpers](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374744645) while preserving their ownership.
+- [Explain WS flags and scratch](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374749757), [why a reduction is needed](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374753351), and [parameters](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374760936). [Link PTX Layout E/F definitions](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374764722) and [explain retained KV](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374771423).
+- [Support output quantization](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374709347): “we should also make it work with output quantization.” Validate the combined feature rather than just deleting its guard.
+- [Move a register choice into configuration](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374774260): “should we move this to mma_load_regs instead ?” Reuse the setting when its role matches; preserve different role budgets when required.
+- [Simplify the README](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374784217): “only keep supported combinations and target models.” Detailed implementation explanations belong at the relevant code.
+
 ## Explicit preferences from PerkzZheng
 
 - Do not add local-validation-only tests to PRs, especially functionality-related probes.
