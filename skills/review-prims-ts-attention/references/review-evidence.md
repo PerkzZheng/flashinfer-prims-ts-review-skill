@@ -33,6 +33,12 @@ Read all 30 inline comments and all 30 review threads on [PR #7410](https://gith
 - [Move a register choice into configuration](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374774260): “should we move this to mma_load_regs instead ?” Reuse the setting when its role matches; preserve different role budgets when required.
 - [Simplify the README](https://github.com/flashinfer-ai/flashinfer/pull/7410#discussion_r4374784217): “only keep supported combinations and target models.” Detailed implementation explanations belong at the relevant code.
 
+### PR #6536 follow-up on 2026-10-28
+
+Retrieved [PR #6536](https://github.com/flashinfer-ai/flashinfer/pull/6536) at `2026-10-28T09:16:31.097241+00:00`, with head `879e52587a0b13e9a3b219d352f455ff8c3de69b`. The complete paginated responses contained 57 inline comments, 35 review events and 16 issue-discussion comments. PerkzZheng authored 27 inline comments, one nonempty review summary and five empty review events, including the approval at `2026-10-28T09:12:48Z`; he authored no issue-discussion comments. These 33 entries are separate from the initial snapshot and are not 33 distinct suggestions.
+
+Read all his written entries, their associated author replies and relevant diff context. The [written review summary](https://github.com/flashinfer-ai/flashinfer/pull/6536#pullrequestreview-5677291824) describes static review and CPU-only probes of an earlier head, not GPU validation. The skill update itself ran no kernels; implementation outcomes and performance figures in the threads remain attributed to their authors. The excerpts below preserve the later clarification that interface reuse required integration beyond renaming, and the explicit deferral of broader optimization transfer.
+
 ## Explicit preferences from PerkzZheng
 
 - Do not add local-validation-only tests to PRs, especially functionality-related probes.
@@ -300,6 +306,42 @@ The author [distinguished BF16 register-window caching from prefetch](https://gi
 The [range-matrix test](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4359522098) and [separate validation-disabled bound test](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4359526757) were removed. In contrast, the author [explained the re-anchor test's distinct branch](https://github.com/flashinfer-ai/flashinfer/pull/7026#discussion_r4359533044): random inputs exercised only the frozen anchor, so spiking late keys was needed to force re-anchoring. The test was renamed and related Keeps cases consolidated. This supports minimal branch-specific coverage, not deleting every test whose purpose was initially questioned.
 
 The proposed frozen tuning struct groups compile-time fine-tuning and preserves unspecified versus explicit-zero semantics. It does not make live batch/sequence metadata part of tuning, nor does it waive the specialization-cost audit. The class name and threshold default are a concrete design example, not a required universal schema or proof that the proposal was already implemented at the retrieved head.
+## Follow-up source comments: PR #6536
+
+### Extend the family instead of adding parallel plumbing
+
+The initial [naming request](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396303221) and [launcher naming comment](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396312115) were clarified by the [interface-integration request](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4398267789):
+
+> I don't quite understand why we need additional launcher as it shares the same interface.
+
+The [follow-up](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4398286808) says to reuse the previous sparse MLA interface. The author first renamed the launcher, then [removed it and reused the existing plan/run, compile and launch functions](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4398658709), retaining a geometry-specific planning hook. The general rule is shared ownership when contracts match, not a mandatory single function for all variants.
+
+Related requests place [split selection in the existing sparse policy](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396299101), [supported modes beside the MLA kernel family](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396292294), and [new numerical cases](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396294242) and [their reference](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396294870) in the existing sparse MLA suite. The [standalone benchmark was dropped](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396272250). This preserves useful correctness coverage while avoiding a parallel model-specific stack.
+
+### Reuse mechanisms and configuration facts
+
+PerkzZheng questioned a [duplicate Gather4 wrapper](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396276014), requested [existing TMA descriptor reuse](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396338220), and asked to merge the new [KV-stage loader](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396354499) and [index producer](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396359294) into existing mechanisms. The author [removed host-encoded descriptors, an extra operand and the eager-run-before-capture rule](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4397360889). This supports reuse where descriptor semantics and lifetimes agree, not a ban on all host descriptors.
+
+The [register-setting comment](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396316969) removed an alias that always equaled `mma_load_regs`. Questions about [existing flags](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396328778) and [“native sparse pages”](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396332016) led to predicates derived from existing page/format facts. Naming a condition is not itself a performance optimization or a reason to add an independent knob.
+
+The [mask-slot question](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396321263) asked what the slots did and whether they could be simplified. The author reported removing the SMEM ring and loader ballot in favor of the existing mask helper, with performance within 1–2% in that experiment. This motivates explaining and comparing extra state; that measured range is not a universal acceptance threshold.
+
+### Preserve cached metadata and distinguish follow-up work
+
+[On making cached indices optional](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396357097):
+
+> why set those to none ? we have some optimization before to cache indices in registers IIRC.
+
+PerkzZheng [asked again for an answer](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4398291445); the author restored the existing behavior. For [warp-uniform index caching](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396361106), the author explained reuse across stages and avoiding per-lane R2UR serialization. The [compatibility question about older variants](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4398298666) was answered by [identifying their existing policy-controlled cache](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4398667301).
+
+The [sequence-length caching question](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396344084) did not result in a mandatory new cache: the author [explained that the read occurs once per work tile, outside the KV loop, and that empty-output semantics differ](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4397386571). Likewise, [extending other optimizations to D512](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4398277763) was explicitly deferred: “we can explore that later.” Preserve established optimized paths without turning these questions into a required broad rewrite.
+
+### Check physical limits and equivalent compile capacities
+
+- **Physical launch geometry.** The [grid-Z finding](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396497436) traced a legal logical shape to 65,536 flattened tokens and an illegal grid-Z launch. The [author retained a clear pre-compilation limit pending scheduler changes](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4397486410). The value 65,535 describes that axis and mapping, not an inherent attention token limit; another mapping requires its own launch analysis.
+- **Actual loader requirements.** The [top-k admission finding](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396497445) separated Gather4's four-coordinate issue width from routing-table capacity, staging, stride and active-length masking. The author [removed the multiple-of-four guard and added a capacity-66 case to existing coverage](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4397504777). Generalize the consumer analysis, not an assumption that every gather has unrestricted capacity.
+- **Canonical compile identity.** The [JIT finding](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4396497451) showed capacities 132, 136 and 256 using the same two 128-key tiles and split choices while creating separate compiled variants. The author [rounded compilation capacity to whole tiles while retaining the original validation capacity](https://github.com/flashinfer-ai/flashinfer/pull/6536#discussion_r4398085686). Reuse equivalent generated kernels after checking all static consumers; neither tile size 128 nor the PR's reported cold-plan time is a universal constant.
+
 ## Read the final discussion before generalizing
 
 - **V padding is not a blanket prohibition on clearing.** The initial request to move work to the KV writer in [#4829](https://github.com/flashinfer-ai/flashinfer/pull/4829#discussion_r3946208438) was followed by a request for broader performance checks and [acceptance of optional tail handling](https://github.com/flashinfer-ai/flashinfer/pull/4829#discussion_r3964260638). Preserve the negotiated correctness contract.

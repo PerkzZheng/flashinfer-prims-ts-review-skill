@@ -8,7 +8,7 @@ The central question is: **does this change extend a reusable attention generato
 
 - Do not add local-validation-only tests to the PR, including functionality probes written to check an implementation during development. Keep temporary probes, tuning scripts, standalone benchmark helpers, exhaustive matrices and debug instrumentation in a local workspace or the agreed validation repository.
 - Apply the same scope rule to documents: exclude experiment diaries, local paths, benchmark histories and review reports from the source PR. Retain concise documentation only for behavior, requirements or contracts changed by the implementation; an extensive campaign does not require an extensive kernel README. When requested, reduce that README to supported combinations and target model recipes, keeping detailed helper/layout explanations beside the code.
-- Retain compact accuracy tests and important public-contract/regression tests. For each addition, identify the observable failure it detects and the gap in existing coverage. Prefer an added case in the existing context, decode, MLA, sparse, or shared-feature suite over another test module.
+- Retain compact accuracy tests and important public-contract/regression tests. For each addition, identify the observable failure it detects and the gap in existing coverage. Prefer an added case in the existing context, decode, MLA, sparse, or shared-feature suite over another test module. Extend the family's independent numerical reference for new supported geometry instead of copying a model-specific reference; preserve its independence from the kernel under test.
 - Existing public execution coverage is generally more valuable than a new test of flags, defaults, private fields, exact resource counts, selected tiles/splits, internal call ordering, source strings, or a mocked path that bypasses the behavior under review. Do not pin a mutable policy choice as if it were an API guarantee.
 - A real GPU test can still be unnecessary: repeating the same feature across a large parameter product, building a generic fixture for a few cases, or asserting wrapper internals does not justify its maintenance cost. Keep the independent numerical reference and representative boundaries that actually matter.
 - Do not interpret test reduction as permission to remove meaningful coverage. Variable Q/KV lengths, tails, masking, changed-input graph replay, and a distinct affected kernel family may require a small maintained case. A targeted sanitizer test can also be justified when numerical output alone cannot reveal an invalid read.
@@ -71,15 +71,28 @@ Keep reusable attention computation in the existing core kernels. A general QK-1
 
 Decide which preparation belongs to the framework. Avoid silently adding input quantization, scale composition, repacking, or metadata updates to every attention call when the producer can prepare the consumed representation directly. If FlashInfer provides that preparation as part of the variant, isolate it in the feature package and make its cost and lifetime explicit.
 
-Package organization does not justify duplicating MLA frontends, load/MMA tasks, reducers, CLC implementations or experimental-package proxies. Extend the existing family when it already owns that computation. Use a separate package for a coherent feature/preparation boundary, not another copy of the core kernel.
+### Extend the existing family interface
+
+When a new variant shares an attention family's input/output contract, extend that family's public wrapper and host plan/compile/cache/launch path. Isolate genuinely different geometry or policy in a small hook at the owning boundary. A separate launcher renamed to match the family still duplicates plumbing; trace the call path and ownership rather than accepting consistent names as proof of integration.
+
+Keep split/dispatch policy with the existing policy, and use one capability vocabulary across bindings, configuration, helpers, tests and documentation. Put a concise supported-mode table beside the kernel family, describing required primary/extra caches, indices and format differences; model names can identify recipes without defining the architecture.
+
+Separate preparation packages remain appropriate for a distinct representation producer or substantial feature-owned work. A separate execution path needs a concrete contract, scheduling or ownership difference. Reuse compatible parts without conflating distinct dtypes, lifetimes or empty-output semantics, and avoid speculative extension frameworks. Extend only the agreed scope; an explicitly deferred optimization for a sibling variant is follow-up work, not a prerequisite for every addition.
 
 ## Reuse mechanisms and explain necessary special cases
 
-- Reuse existing TMA descriptors, inputs, SMEM/TMEM resources, tasks, reducers and predicates where semantics and lifetimes match. Trace each new parameter, helper, buffer and launch to an actual consumer.
+- Reuse existing instruction wrappers, TMA descriptors, inputs, SMEM/TMEM resources, tasks, reducers and predicates where semantics and lifetimes match. Trace each new parameter, helper, buffer and launch to an actual consumer. Check existing descriptor construction before adding a host descriptor cache, extra kernel operands or an eager-warmup requirement for graph capture.
 - Prefer an existing CuTe/NVVM primitive over added inline PTX. When a primitive cannot express the operation or supported compiler versions need a fallback, explain why and keep the implementation in the appropriate helper boundary.
 - Preserve meaningful K/V or stage distinctions. Sharing code does not require conflating different dtypes, live ranges, descriptor ownership or barriers.
 - Derive generic loops and tail handling from supported geometry. Do not spell out one new head dimension or customer shape throughout the implementation when a shared loop can express it.
 - Use small functions for repeated conditions or coherent transformations. Remove unused alternatives and wrappers that only forward calls; avoid a second configuration framework or custom debug TaskManager.
+- Before adding a mask or metadata ring, explain what information it carries, who produces/consumes it and why existing mask/index helpers cannot supply it. Compare the resource and synchronization cost; do not retain a second protocol merely because the new variant initially used it.
+
+### Preserve existing optimizations when extending shared paths
+
+Trace the established metadata producer, register cache and loader consumers before changing shared signatures or defaults. Making cached indices optional or passing `None` can bypass an existing optimization even when numerical results still pass. Reuse the current index staging and load-stage helpers where their contracts match, and check affected sibling paths for correctness and performance regressions.
+
+Explain the mechanism behind a claimed gain, such as loading indices once per tile and reusing warp-uniform coordinates across multiple stages. For a proposed scalar cache, establish the actual read frequency, reuse interval and lifetime first: a read once per work tile does not imply repeated traffic in the KV loop. Preserve live request updates and empty-output behavior. Do not require a new cache without evidence, or force a broader optimization rollout that the final review explicitly defers.
 
 ### Document every helper
 
@@ -102,7 +115,7 @@ Check the actual overlap with slot waits, payload loads and computation. A benef
 
 ## Separate policy facts, runtime state and compile identity
 
-Put register/stage policy in the owning configuration and have task factories consume it. Reuse an existing setting when its semantics match; do not force loader and MMA roles to share a budget if their live state differs. A derived configuration property can remove a task-side literal without adding another static tuning field. Explain budget arithmetic and validate the resulting resource allocation.
+Put register/stage policy in the owning configuration and have task factories consume it. Reuse an existing setting when its semantics match; do not force loader and MMA roles to share a budget if their live state differs. Derive capability predicates from existing layout/format facts when those facts fully determine the behavior. An alias or derived property should clarify semantics without becoming a second independently settable flag or an extra specialization axis. Add a new knob only for an independent supported choice. Explain budget arithmetic and validate the resulting resource allocation.
 
 Write down the agreed primary/extra format pairs before simplifying source selection. Predicate names should describe the actual capability and source roles. Remove unreachable reverse-pool or extra-dtype branches when they are outside the requested contract; do not silently broaden the matrix for symmetry. Keep support validation consistent for public planning and independently callable kernel construction without duplicating validation machinery.
 
@@ -120,6 +133,8 @@ For every unsupported kernel combination or admission guard, identify the actual
 
 A page-size restriction such as `page_size == 32` is not justified merely because only page size 32 was tested. Check the actual page/fragment divisibility, addressing, masking, resource and scheduling requirements. If other sizes satisfy them, run representative qualification across the affected paths and replace the arbitrary whitelist with the genuine structural conditions.
 
+Keep instruction issue width, routing-table capacity, runtime row stride, active length and padded tile extent distinct. A four-coordinate gather does not by itself require a table capacity divisible by four: inspect staging/clamping, all consumers and tail masks. Qualify a legal nonaligned capacity in the existing numerical suite before relaxing the guard; padding the compile extent does not authorize reading beyond the actual allocation.
+
 When a restriction comes from shared window or staging geometry, audit every consumer, including BF16 and FP8, rather than guarding only the newly optimized dtype. Consider whether padding or grouping several tiles could relax it. If the reviewer explicitly accepts the current recipe's narrower geometry for a small performance change, document that implementation assumption and follow-up separately from an architectural limit; do not force the larger redesign into the accepted scope.
 
 Avoid carrying a historical validation matrix into runtime support policy without investigating it. Run broader qualification locally; commit only the minimal durable accuracy or regression coverage justified by the test-scope rules above. Document implementation constraints and completed validation coverage separately.
@@ -129,6 +144,8 @@ Do not remove a real correctness guard or claim untested combinations have passe
 ### Plan and compile identity
 
 Distinguish static model/device facts, generated-kernel identity, workspace capacity, and live request values. Avoid recompilation or policy-key proliferation when different runtime sizes generate the same kernel; preserve fields that genuinely change layouts, baked validation bounds, resource topology, compiler options or hardware behavior. Explain cache hashing costs and `compare=False` / `hash=False` exclusions. Do not let a global policy cache retain per-layer tensors or mutable scratch.
+
+When a static capacity is consumed only through its tile count, canonicalize it before both in-memory and persistent compile-cache lookup, for example `ceil_div(capacity, tile_extent) * tile_extent`. Derive the extent from the selected recipe; no historical tile size is universal. Establish that the grouped values share generated behavior and baked bounds, including split/resource choices. Keep the original requested capacity for public validation and the actual strides/lengths for runtime addressing. Check equivalent values and a bucket boundary for correct reuse; this does not require a separate PR test matrix.
 
 Check that `plan()` / `run()` ownership and workspace sizing remain coherent across context, decode and MLA. Prefer reuse of caller-owned buffers and original cache strides over repeated allocation, fill/copy, transposition or host readback. Exact static contracts and runtime bounds must still follow the current API; do not mechanically impose one historical PR's plan signature on every path.
 
@@ -156,6 +173,7 @@ Trace producer → preparation → attention → reduction → output for affect
 - Put a PDL acquire before the first dependent read, under the PDL capability condition; do not disable PDL or tie it only to split-KV as a workaround. Preserve independent prologue overlap where the dependency permits it.
 - Express ownership, publication and reuse through the existing TS resources/pipelines. Review extra GMEM→SMEM→register staging, vectorization, transaction counts and all consumers before introducing manual synchronization.
 - Check dense versus boundary tiles, partial dimensions, inactive/empty requests, invalid indices and all-masked rows. Preserve row maxima/sums, FP8 probability scaling, sink mass and reduction/final-output conventions.
+- Map logical dimensions to the physical grid after flattening batch/query tokens, grouping heads and adding splits. Check each launch, including reducers, against axis limits and index arithmetic; a legal tensor or integer extent can still produce an illegal grid. Prefer a suitable shared scheduler/remapping when within scope. If that redesign is deferred, reject the actual bound clearly before compilation and document it as a current launch-mapping limitation, not an inherent attention limit or missing validation.
 - Explain new constants, formulas and performance mechanisms beside the code. Comments should make tile units, ownership and head/mainloop/tail progression understandable without the review conversation.
 - Check composition with existing output quantization and other requested epilogues. Removing an admission guard is insufficient: account for extra scratch/registers, stage lifetimes and final versus split-reduction stores, then validate output values, scales and graph replay through the public API. Keep a real resource constraint documented while fixing the missing combination.
 - Review changes shared by sparse and dense paths against both. Device admission, instruction support and completed accuracy/performance qualification are separate claims.
